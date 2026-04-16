@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pytest -v)",
+      "Bash(bash -c 'source /Users/eloi/.espressif/v6.0/esp-idf/export.sh > /dev/null 2>&1 && which python && python -c \"import esp_idf_monitor; print\\(esp_idf_monitor.__file__\\)\"')",
+      "Bash(bash *)"
+    ]
+  }
+}

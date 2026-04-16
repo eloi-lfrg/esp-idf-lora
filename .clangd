@@ -1,0 +1,7 @@
+CompileFlags:
+    Remove: [-f*, -m*]
+    Add: [-Wno-overloaded-virtual]
+
+Diagnostics:
+    Suppress: [overloaded-virtual]
+    UnusedIncludes: None
