@@ -1,4 +1,4 @@
-# C++ Standards — ha-lora-gateway
+# C++ Standards — esp-idf-lora
 
 Apply these rules to every C++ file in this repository. They are derived from
 the existing code (`EspHal`, `LoraRadio`) and must be followed for all new code.

@@ -2,7 +2,7 @@
 trigger: always_on
 ---
 
-# C++ Coding Standards — ha-lora-gateway
+# C++ Coding Standards — esp-idf-lora
 
 Target: ESP32 / ESP-IDF 6 / FreeRTOS / C++17. No Arduino framework.
 

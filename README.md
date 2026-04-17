@@ -1,4 +1,4 @@
-# ha-lora-gateway
+# esp-idf-lora
 
 LoRa gateway on ESP32 for Home Assistant, based on ESP-IDF 6 and RadioLib.  
 The project implements a bidirectional ping-pong node (master/slave) and provides a reusable radio layer (`LoraRadio`) that can be integrated into any ESP-IDF application.
@@ -41,7 +41,7 @@ All pins are configurable in `LoraRadio::Config`.
 ## Project Structure
 
 ```
-ha-lora-gateway/
+esp-idf-lora/
 ├── components/
 │   └── lora/
 │       ├── EspHal.h / EspHal.cpp     # ESP-IDF HAL for RadioLib
