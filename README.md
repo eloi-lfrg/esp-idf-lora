@@ -1,22 +1,22 @@
 # ha-lora-gateway
 
-Passerelle LoRa sur ESP32 pour Home Assistant, basée sur ESP-IDF 6 et RadioLib.  
-Le projet implémente un nœud ping-pong bidirectionnel (maître/esclave) et fournit une couche radio réutilisable (`LoraRadio`) qui peut être intégrée dans n'importe quelle application ESP-IDF.
+LoRa gateway on ESP32 for Home Assistant, based on ESP-IDF 6 and RadioLib.  
+The project implements a bidirectional ping-pong node (master/slave) and provides a reusable radio layer (`LoraRadio`) that can be integrated into any ESP-IDF application.
 
 ---
 
-## Matériel requis
+## Required Hardware
 
-| Composant | Valeur |
+| Component | Value |
 |---|---|
-| MCU | ESP32 (testé sur ESP32-WROVER) |
-| Module radio | SX1276 (breakout ou module RFM95W) |
-| Fréquence | 868 MHz (EU) — configurable |
+| MCU | ESP32 (tested on ESP32-WROVER) |
+| Radio module | SX1276 (breakout or RFM95W module) |
+| Frequency | 868 MHz (EU) — configurable |
 | Interface | SPI (SPI3_HOST / VSPI) |
 
-### Câblage par défaut
+### Default Wiring
 
-| Signal | GPIO ESP32 |
+| Signal | ESP32 GPIO |
 |---|---|
 | SCK | 5 |
 | MISO | 19 |
@@ -26,29 +26,29 @@ Le projet implémente un nœud ping-pong bidirectionnel (maître/esclave) et fou
 | RST | 14 |
 | DIO1 | 35 |
 
-Tous les pins sont configurables dans `LoraRadio::Config`.
+All pins are configurable in `LoraRadio::Config`.
 
 ---
 
-## Prérequis logiciels
+## Software Prerequisites
 
-- [ESP-IDF 6.0](https://docs.espressif.com/projects/esp-idf/en/v6.0/esp32/get-started/index.html) installé et activé (`idf.py` dans le PATH)
+- [ESP-IDF 6.0](https://docs.espressif.com/projects/esp-idf/en/v6.0/esp32/get-started/index.html) installed and activated (`idf.py` in PATH)
 - CMake ≥ 3.22
-- VSCode + extension [ESP-IDF](https://marketplace.visualstudio.com/items?itemName=espressif.esp-idf-tools) (optionnel)
+- VSCode + [ESP-IDF extension](https://marketplace.visualstudio.com/items?itemName=espressif.esp-idf-tools) (optional)
 
 ---
 
-## Structure du projet
+## Project Structure
 
 ```
 ha-lora-gateway/
 ├── components/
 │   └── lora/
-│       ├── EspHal.h / EspHal.cpp     # HAL ESP-IDF pour RadioLib
-│       ├── LoraRadio.h / LoraRadio.cpp  # Driver LoRa haut niveau
+│       ├── EspHal.h / EspHal.cpp     # ESP-IDF HAL for RadioLib
+│       ├── LoraRadio.h / LoraRadio.cpp  # High-level LoRa driver
 │       └── CMakeLists.txt
 ├── main/
-│   ├── main.cpp                      # Application ping-pong maître/esclave
+│   ├── main.cpp                      # Master/slave ping-pong application
 │   └── idf_component.yml
 ├── CMakeLists.txt
 └── dependencies.lock
@@ -56,33 +56,33 @@ ha-lora-gateway/
 
 ---
 
-## Compilation et flash
+## Build and Flash
 
 ```bash
-# Configurer la cible
+# Set the target
 idf.py set-target esp32
 
-# Compiler
+# Build
 idf.py build
 
-# Flasher (remplacer /dev/ttyUSB0 par le bon port)
+# Flash (replace /dev/ttyUSB0 with the correct port)
 idf.py -p /dev/ttyUSB0 flash monitor
 ```
 
 ---
 
-## Utilisation — application ping-pong
+## Usage — Ping-Pong Application
 
-Le `main.cpp` implémente un ping-pong radio simple contrôlé par le define `IS_MASTER` :
+`main.cpp` implements a simple radio ping-pong controlled by the `IS_MASTER` define:
 
 ```cpp
-#define IS_MASTER true   // true = maître, false = esclave
+#define IS_MASTER true   // true = master, false = slave
 ```
 
-**Maître** : envoie un ping numéroté toutes les 2 secondes, attend une réponse pendant 3 secondes.  
-**Esclave** : attend indéfiniment un ping, répond immédiatement avec `"pong"`.
+**Master**: sends a numbered ping every 2 seconds, waits for a response for 3 seconds.  
+**Slave**: waits indefinitely for a ping, responds immediately with `"pong"`.
 
-Compiler deux firmwares (un avec `IS_MASTER true`, l'autre `false`) et les flasher sur deux cartes.
+Build two firmwares (one with `IS_MASTER true`, the other `false`) and flash them onto two boards.
 
 ---
 
@@ -101,35 +101,35 @@ LoraRadio radio(cfg);
 radio.begin();
 ```
 
-### Émission
+### Transmit
 
 ```cpp
-// Buffer binaire
+// Binary buffer
 radio.transmit(buffer, len);
 
-// Chaîne de caractères
+// String
 radio.transmit("hello");
 ```
 
-### Réception bloquante (mode ping-pong)
+### Blocking Receive (ping-pong mode)
 
 ```cpp
 LoraRadio::Packet pkt{};
 
-// Avec timeout
+// With timeout
 if (radio.receive(pkt, 3000) == ESP_OK) {
     // pkt.data, pkt.len, pkt.rssi, pkt.snr, pkt.freqErr
 }
 
-// Sans timeout (portMAX_DELAY)
+// No timeout (portMAX_DELAY)
 radio.receive(pkt, portMAX_DELAY);
 ```
 
-### Réception continue avec callback
+### Continuous Receive with Callback
 
 ```cpp
 radio.setOnRx([](const LoraRadio::Packet &pkt) {
-    ESP_LOGI("RX", "Reçu %d octets, RSSI=%.1f", pkt.len, pkt.rssi);
+    ESP_LOGI("RX", "Received %d bytes, RSSI=%.1f", pkt.len, pkt.rssi);
 });
 
 radio.startReceive();
@@ -137,43 +137,43 @@ radio.startReceive();
 radio.stopReceive();
 ```
 
-### Modifications à la volée
+### Runtime Parameter Changes
 
 ```cpp
-radio.setFreq(915.0f);   // Changer la fréquence
-radio.setSF(12);          // Changer le spreading factor
-radio.setTxPower(20);     // Changer la puissance TX
+radio.setFreq(915.0f);   // Change frequency
+radio.setSF(12);          // Change spreading factor
+radio.setTxPower(20);     // Change TX power
 ```
 
 ---
 
-## Architecture interne
+## Internal Architecture
 
 ### `EspHal`
 
-Implémente l'interface `RadioLibHal` avec les API natives ESP-IDF :
+Implements the `RadioLibHal` interface using native ESP-IDF APIs:
 
-| Fonctionnalité | API ESP-IDF |
+| Feature | ESP-IDF API |
 |---|---|
 | GPIO | `gpio_config`, `gpio_set_level`, `gpio_get_level` |
-| Interruptions | `gpio_isr_handler_add` (service IRAM) |
+| Interrupts | `gpio_isr_handler_add` (IRAM service) |
 | SPI | `spi_bus_initialize`, `spi_device_polling_transmit` (SPI3_HOST, 4 MHz) |
-| Temporisation | `esp_timer_get_time`, `vTaskDelay` |
+| Timing | `esp_timer_get_time`, `vTaskDelay` |
 
 ### `LoraRadio`
 
-Deux modèles de réception :
+Two receive models:
 
-- **Continu** (`startReceive`) : tâche FreeRTOS `lora_rx` qui dort sur `ulTaskNotifyTake` et est réveillée par l'ISR DIO0.
-- **Bloquant** (`receive`) : le thread appelant dort sur `ulTaskNotifyTake` — pas de busy-wait, la tâche IDLE n'est jamais affamée.
+- **Continuous** (`startReceive`): FreeRTOS `lora_rx` task sleeping on `ulTaskNotifyTake`, woken by the DIO0 ISR.
+- **Blocking** (`receive`): the calling thread sleeps on `ulTaskNotifyTake` — no busy-wait, the IDLE task is never starved.
 
-L'ISR est placée en IRAM (`IRAM_ATTR`) et utilise `vTaskNotifyGiveFromISR` + `portYIELD_FROM_ISR` pour un réveil immédiat à priorité correcte.
+The ISR is placed in IRAM (`IRAM_ATTR`) and uses `vTaskNotifyGiveFromISR` + `portYIELD_FROM_ISR` for immediate wake-up at the correct priority.
 
 ---
 
-## Dépendances
+## Dependencies
 
-| Dépendance | Version | Source |
+| Dependency | Version | Source |
 |---|---|---|
 | ESP-IDF | 6.0.0 | Espressif |
 | [RadioLib](https://github.com/jgromes/RadioLib) | 7.6.0 | Espressif Component Registry |
@@ -182,61 +182,61 @@ L'ISR est placée en IRAM (`IRAM_ATTR`) et utilise `vTaskNotifyGiveFromISR` + `p
 
 ## Tests
 
-Les tests sont dans `tests/lora/`. Deux niveaux existent : des tests purement Python (sans matériel) et des tests d'intégration Unity qui s'exécutent sur l'ESP32.
+Tests are located in `tests/lora/`. Two levels exist: pure Python tests (no hardware) and Unity integration tests that run on the ESP32.
 
-### Prérequis
+### Prerequisites
 
 ```bash
 cd tests/lora
-source venv/bin/activate   # venv déjà provisionné
-# ou, si absent :
+source venv/bin/activate   # venv already provisioned
+# or, if missing:
 python3 -m venv venv && source venv/bin/activate && pip install -r requirements.txt
 ```
 
-### Tests sans matériel (défaut)
+### Software-only Tests (default)
 
-Ces tests parsent les headers C++ et vérifient les constantes, les valeurs par défaut de `Config`, la structure de `Packet` et la surface d'API — aucun ESP32 requis.
+These tests parse C++ headers and verify constants, `Config` default values, `Packet` structure, and API surface — no ESP32 required.
 
 ```bash
 cd tests/lora
 pytest -v -m "not hardware"
 ```
 
-Lancer un seul test :
+Run a single test:
 
 ```bash
 pytest -v -m "not hardware" -k "test_default_frequency"
 ```
 
-### Tests d'intégration hardware (ESP32 + SX1276)
+### Hardware Integration Tests (ESP32 + SX1276)
 
-Ces tests flashent automatiquement le firmware Unity sur l'ESP32, lisent la sortie série et rapportent chaque `TEST_CASE` comme un test pytest distinct.
+These tests automatically flash the Unity firmware onto the ESP32, read the serial output, and report each `TEST_CASE` as a separate pytest test.
 
 ```bash
 cd tests/lora
-pytest -v   # détecte le port série automatiquement
+pytest -v   # auto-detects the serial port
 ```
 
-Le port est lu depuis `.vscode/settings.json` (`idf.port`) ou auto-détecté. Pour le spécifier manuellement, modifier `_serial_port()` dans `test_lora.py` ou définir `idf.port` dans les settings VSCode.
+The port is read from `.vscode/settings.json` (`idf.port`) or auto-detected. To specify it manually, modify `_serial_port()` in `test_lora.py` or set `idf.port` in VSCode settings.
 
-> **Note :** `IDF_PATH` et le chemin Python ESP-IDF sont codés en dur dans `test_lora.py` — adapter si l'installation ESP-IDF diffère de `/Users/eloi/.espressif/`.
+> **Note:** `IDF_PATH` and the ESP-IDF Python path are hardcoded in `test_lora.py` — update them if your ESP-IDF installation differs from `/Users/eloi/.espressif/`.
 
-### Exécution manuelle des tests Unity
+### Running Unity Tests Manually
 
-Pour lancer les tests sans pytest (moniteur série direct) :
+To run the tests without pytest (direct serial monitor):
 
 ```bash
 idf.py -C tests/lora flash monitor
-# Dans le moniteur : taper '!' puis Entrée pour exécuter tous les tests
+# In the monitor: type '!' then Enter to run all tests
 ```
 
-### Ajouter un test
+### Adding a Test
 
-- **Test sans hardware** : ajouter une méthode dans la classe appropriée de `tests/lora/test_lora.py`.
-- **Test d'intégration** : ajouter un `TEST_CASE("…", "[radio]")` dans `tests/lora/main/test_lora_radio.cpp` ; il sera automatiquement découvert et exécuté par pytest.
+- **Software test**: add a method to the appropriate class in `tests/lora/test_lora.py`.
+- **Integration test**: add a `TEST_CASE("…", "[radio]")` in `tests/lora/main/test_lora_radio.cpp`; it will be automatically discovered and executed by pytest.
 
 ---
 
-## Licence
+## License
 
-Ce projet est distribué sous licence MIT.
+This project is distributed under the MIT license.
